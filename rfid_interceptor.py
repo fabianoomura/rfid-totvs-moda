@@ -31,6 +31,14 @@ def build_response(acao: str):
                         "portal_id": 1, "session_id": "MOOUI-001", "timestamp": now})
     elif acao == "fin":
         return jsonify({"status": "ok", "message": "Sessão finalizada", "timestamp": now})
+    elif acao == "cls":
+        return jsonify({"status": "ok", "message": "Sessão limpa", "timestamp": now})
+    elif acao == "lst":
+        # Lista sessões ativas — retorna sessão atual como ativa
+        return jsonify({"status": "ok", "sessions": [{"session_id": "MOOUI-001", "portal_id": 1, "status": "active"}], "count": 1, "timestamp": now})
+    elif acao == "lstcls":
+        # Lista e fecha sessões anteriores — retorna lista vazia (sem sessões a fechar)
+        return jsonify({"status": "ok", "sessions": [], "count": 0, "timestamp": now})
     elif acao == "read":
         codigo = "1000000084764"
         tags = [codigo] * 50
