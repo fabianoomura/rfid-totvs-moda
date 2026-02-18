@@ -94,7 +94,7 @@ def catch_all(path):
         "args":    dict(request.args),
         "headers": dict(request.headers),
         "body_raw": request.get_data(as_text=True) or None,
-        "body_json": request.json if request.is_json else None,
+        "body_json": request.get_json(silent=True, force=False),
         "ip":      request.remote_addr,
     })
 
