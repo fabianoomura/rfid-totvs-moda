@@ -32,8 +32,10 @@ def build_response(acao: str):
     elif acao == "fin":
         return jsonify({"status": "ok", "message": "Sessão finalizada", "timestamp": now})
     elif acao == "read":
+        codigo = "1000000084764"
+        tags = [codigo] * 50
         return jsonify({"status": "ok", "message": "Leitura realizada",
-                        "tags": [], "count": 0, "timestamp": now})
+                        "tags": tags, "count": len(tags), "timestamp": now})
     elif acao == "status":
         return jsonify({"status": "ok", "message": "Online", "timestamp": now})
     else:
