@@ -34,17 +34,15 @@ def build_response(acao: str):
     elif acao == "cls":
         return jsonify({"status": "ok", "message": "Sessão limpa", "timestamp": now})
     elif acao == "lst":
-        # Retorna tags lidas — testando se lst é equivalente ao read
-        codigo = "1000000084764"
-        tags = [codigo] * 50
+        # 1 tag EPC SGTIN-96 gerada a partir do EAN13 1000000084764, serial 1
+        tags = ["30343D090008470000000001"]
         return jsonify({"status": "ok", "message": "Leitura realizada",
                         "tags": tags, "count": len(tags), "timestamp": now})
     elif acao == "lstcls":
         # Lista e fecha sessões anteriores — retorna lista vazia (sem sessões a fechar)
         return jsonify({"status": "ok", "sessions": [], "count": 0, "timestamp": now})
     elif acao == "read":
-        codigo = "1000000084764"
-        tags = [codigo] * 50
+        tags = ["30343D090008470000000001"]
         return jsonify({"status": "ok", "message": "Leitura realizada",
                         "tags": tags, "count": len(tags), "timestamp": now})
     elif acao == "status":
