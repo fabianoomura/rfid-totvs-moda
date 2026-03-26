@@ -11,3 +11,8 @@ env/
 *.pyc
 .DS_Store
 nul
+
+# Arquivos de teste do middleware RFID
+RFIDIniciar.txt
+RFIDParar.txt
+ListaTagtxt.txt
