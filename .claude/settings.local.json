@@ -10,7 +10,9 @@
       "Bash(powershell -Command \"Remove-Item ''c:\\projetos_code\\totvs\\rfid_web\\nul'' -Force\")",
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd Vercel deployment config and initial project files\n\n- Add vercel.json routing all requests to Flask app via api/index.py\n- Add api/index.py as serverless entrypoint for Vercel\n- Add requirements.txt (Vercel uses this file name)\n- Add .gitignore for Python/Vercel projects\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
