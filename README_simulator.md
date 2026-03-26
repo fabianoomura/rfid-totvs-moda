@@ -24,12 +24,26 @@ No cadastro **ADMFM013** (Configuração de Portal RFID):
 ```bash
 # Instalar dependências
 pip install -r requirements_simulator.txt
-
-# Rodar o simulador
-python rfid_middleware_simulator.py
 ```
 
 ## Uso
+
+### Opção 1: Interface Gráfica (Recomendado)
+
+```bash
+python rfid_middleware_gui.py
+```
+
+A interface gráfica oferece:
+- ✅ Visualização em tempo real das 10 tags geradas
+- ✅ Status visual do middleware e portal TOTVS
+- ✅ Log de eventos colorido e scrollable
+- ✅ Botões para iniciar/parar o middleware
+- ✅ Limpeza de logs com um clique
+
+![Screenshot da GUI](https://via.placeholder.com/600x400?text=RFID+Middleware+GUI)
+
+### Opção 2: Linha de Comando
 
 1. **Inicie o simulador**:
    ```bash
