@@ -19,7 +19,7 @@ RFID_DIR = r"C:\RFID"
 ARQUIVO_INICIAR = "RFIDIniciar.txt"
 ARQUIVO_PARAR = "RFIDParar.txt"
 ARQUIVO_TAGS = "ListaTagtxt.txt"
-TAGS_TEMPLATE = "tags_template.txt"  # Arquivo com as tags a serem copiadas
+TAGS_TEMPLATE = "data/tags_template.txt"  # Arquivo com as tags a serem copiadas
 
 # Códigos de barras RFID (deprecated - agora lê de arquivo)
 BARCODES = [f"00392800010000#{i:05d}" for i in range(1, 11)]
