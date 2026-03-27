@@ -228,8 +228,7 @@ class RFIDMiddlewareGUI:
         self.tags_text.config(state=tk.NORMAL)
         self.tags_text.delete(1.0, tk.END)
         for i, tag in enumerate(tags, 1):
-            barcode = BARCODES[i-1]
-            self.tags_text.insert(tk.END, f"{i:02d} │ {tag} │ {barcode}\n")
+            self.tags_text.insert(tk.END, f"{i:02d} │ {tag}\n")
         self.tags_text.config(state=tk.DISABLED)
 
     def log(self, message, level="INFO"):
