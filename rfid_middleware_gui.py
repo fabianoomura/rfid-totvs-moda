@@ -252,10 +252,18 @@ class RFIDMiddlewareGUI:
             with open(caminho, "w", encoding="utf-8") as f:
                 for tag in tags:
                     f.write(tag + "\n")
-            self.log(f"Created {ARQUIVO_TAGS} with {len(tags)} tags", "SUCCESS")
+            self.log(f"├─ Created {ARQUIVO_TAGS}", "SUCCESS")
+            self.log(f"├─ Location: {caminho}", "INFO")
+            self.log(f"├─ Tags written: {len(tags)}", "SUCCESS")
+
+            # Verifica se arquivo existe
+            if os.path.exists(caminho):
+                size = os.path.getsize(caminho)
+                self.log(f"├─ File size: {size} bytes", "INFO")
+
             return True
         except Exception as e:
-            self.log(f"Error creating {ARQUIVO_TAGS}: {e}", "ERROR")
+            self.log(f"ERROR creating {ARQUIVO_TAGS}: {e}", "ERROR")
             return False
 
     def start_middleware(self):
@@ -327,23 +335,40 @@ class RFIDEventHandlerGUI(FileSystemEventHandler):
 
         nome = os.path.basename(event.src_path)
 
+        # Log ALL file creations for debugging
+        self.gui.log(f"File detected: {nome}", "INFO")
+
         if nome == ARQUIVO_INICIAR:
-            self.gui.log(">>> Portal opened (RFIDIniciar.txt detected)", "SUCCESS")
+            self.gui.log("=" * 50, "SUCCESS")
+            self.gui.log(">>> PORTAL OPENED <<<", "SUCCESS")
+            self.gui.log(f"├─ Trigger file: {nome}", "INFO")
+            self.gui.log("=" * 50, "SUCCESS")
+
             self.gui.var_portal.set("Aberto")
             self.gui.dot_portal.config(fg=GREEN)
             self.gui.lbl_portal.config(fg=GREEN)
             self.gui.portal_aberto = True
 
+            # Small delay to ensure file is fully created
             time.sleep(0.1)
+            self.gui.log("Creating tag file...", "INFO")
             self.gui.criar_lista_tags()
 
         elif nome == ARQUIVO_PARAR:
-            self.gui.log(">>> Portal closed (RFIDParar.txt detected)", "WARNING")
+            self.gui.log("=" * 50, "WARNING")
+            self.gui.log(">>> PORTAL CLOSED <<<", "WARNING")
+            self.gui.log(f"├─ Trigger file: {nome}", "INFO")
+            self.gui.log("=" * 50, "WARNING")
+
             self.gui.var_portal.set("Fechado")
             self.gui.dot_portal.config(fg=RED)
             self.gui.lbl_portal.config(fg=RED)
             self.gui.portal_aberto = False
             self.gui.log(f"├─ {ARQUIVO_TAGS} kept in directory", "INFO")
+
+        elif nome == ARQUIVO_TAGS:
+            # ListaTagtxt.txt foi criado (pelo nosso próprio código)
+            self.gui.log(f"├─ Tag file detected by watchdog: {nome}", "INFO")
 
 
 def main():
