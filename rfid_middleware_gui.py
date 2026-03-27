@@ -270,41 +270,52 @@ class RFIDMiddlewareGUI:
                 self.log(f"├─ Error: {os.path.basename(arquivo)} - {e}", "ERROR")
 
     def criar_lista_tags(self):
-        """Cria ListaTagtxt.txt com as tags."""
+        """Copia tags_template.txt para C:\RFID\ListaTagtxt.txt"""
+        import shutil
+
         self.log(">>> criar_lista_tags() called", "INFO")
 
-        tags = generate_rfid_tags()
-        self.log(f"├─ Loaded {len(tags)} tags from template", "INFO")
+        # Caminho do template (na pasta do script)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        template_path = os.path.join(script_dir, TAGS_TEMPLATE)
 
-        caminho = os.path.join(RFID_DIR, ARQUIVO_TAGS)
-        self.log(f"├─ Target path: {caminho}", "INFO")
+        # Caminho de destino
+        destino = os.path.join(RFID_DIR, ARQUIVO_TAGS)
+
+        self.log(f"├─ Template: {template_path}", "INFO")
+        self.log(f"├─ Destination: {destino}", "INFO")
 
         try:
-            # Verifica se diretório existe
+            # Verifica se template existe
+            if not os.path.exists(template_path):
+                self.log(f"├─ ERROR: Template not found!", "ERROR")
+                return False
+
+            # Verifica se diretório destino existe
             if not os.path.exists(RFID_DIR):
                 self.log(f"├─ Creating directory: {RFID_DIR}", "WARNING")
                 os.makedirs(RFID_DIR, exist_ok=True)
 
-            # Cria arquivo
-            self.log(f"├─ Writing file...", "INFO")
-            with open(caminho, "w", encoding="utf-8") as f:
-                for tag in tags:
-                    f.write(tag + "\n")
+            # Copia arquivo
+            self.log(f"├─ Copying file...", "INFO")
+            shutil.copy2(template_path, destino)
 
-            self.log(f"├─ File written successfully!", "SUCCESS")
-
-            # Verifica se arquivo existe
-            if os.path.exists(caminho):
-                size = os.path.getsize(caminho)
-                self.log(f"├─ File verified: {size} bytes", "SUCCESS")
+            # Verifica
+            if os.path.exists(destino):
+                size = os.path.getsize(destino)
+                with open(destino, "r") as f:
+                    num_linhas = len(f.readlines())
+                self.log(f"├─ SUCCESS! File copied", "SUCCESS")
+                self.log(f"├─ Size: {size} bytes | Lines: {num_linhas}", "SUCCESS")
+                return True
             else:
-                self.log(f"├─ WARNING: File not found after creation!", "ERROR")
+                self.log(f"├─ ERROR: File not found after copy!", "ERROR")
+                return False
 
-            return True
         except Exception as e:
-            self.log(f"ERROR creating {ARQUIVO_TAGS}: {e}", "ERROR")
+            self.log(f"ERROR copying file: {e}", "ERROR")
             import traceback
-            self.log(f"Traceback: {traceback.format_exc()}", "ERROR")
+            self.log(f"├─ {traceback.format_exc()}", "ERROR")
             return False
 
     def start_middleware(self):
