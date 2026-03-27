@@ -8,6 +8,7 @@ venv/
 env/
 .idea/
 .vscode/
+.claude/
 *.pyc
 .DS_Store
 nul
