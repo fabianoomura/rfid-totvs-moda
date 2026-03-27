@@ -19,8 +19,9 @@ RFID_DIR = r"C:\RFID"
 ARQUIVO_INICIAR = "RFIDIniciar.txt"
 ARQUIVO_PARAR = "RFIDParar.txt"
 ARQUIVO_TAGS = "ListaTagtxt.txt"
+TAGS_TEMPLATE = "tags_template.txt"  # Arquivo com as tags a serem copiadas
 
-# Códigos de barras RFID
+# Códigos de barras RFID (deprecated - agora lê de arquivo)
 BARCODES = [f"00392800010000#{i:05d}" for i in range(1, 11)]
 
 # Tema (baseado no rfid_terminal.py)
@@ -50,15 +51,32 @@ def ean13_to_sgtin96(ean13_no_check: str, serial: int) -> str:
     return f"{sgtin:024X}"
 
 
-def generate_rfid_tags() -> list:
-    """Gera lista de 10 EPCs SGTIN-96."""
+def load_rfid_tags_from_file() -> list:
+    """Carrega as tags RFID do arquivo template."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    template_path = os.path.join(script_dir, TAGS_TEMPLATE)
+
     tags = []
-    for barcode in BARCODES:
-        ean_part, serial_part = barcode.split("#")
-        serial = int(serial_part)
-        epc = ean13_to_sgtin96(ean_part, serial)
-        tags.append(epc)
+    try:
+        with open(template_path, "r", encoding="utf-8") as f:
+            for line in f:
+                tag = line.strip()
+                if tag:  # Ignora linhas vazias
+                    tags.append(tag)
+    except FileNotFoundError:
+        # Fallback: gera as tags se o arquivo não existir
+        for barcode in BARCODES:
+            ean_part, serial_part = barcode.split("#")
+            serial = int(serial_part)
+            epc = ean13_to_sgtin96(ean_part, serial)
+            tags.append(epc)
+
     return tags
+
+
+def generate_rfid_tags() -> list:
+    """Gera lista de EPCs SGTIN-96 (deprecated - use load_rfid_tags_from_file)."""
+    return load_rfid_tags_from_file()
 
 
 class RFIDMiddlewareGUI:
@@ -177,7 +195,8 @@ class RFIDMiddlewareGUI:
         self._div(m)
 
         # Tags RFID
-        self._lbl(m, "Tags RFID (10x SGTIN-96):")
+        tags_count = len(load_rfid_tags_from_file())
+        self._lbl(m, f"Tags RFID ({tags_count}x SGTIN-96):")
         self.tags_text = scrolledtext.ScrolledText(
             m, height=7, wrap=tk.NONE, font=(F, 8),
             bg="#0a0a0a", fg=GREEN, insertbackground=CYAN,
@@ -252,25 +271,40 @@ class RFIDMiddlewareGUI:
 
     def criar_lista_tags(self):
         """Cria ListaTagtxt.txt com as tags."""
+        self.log(">>> criar_lista_tags() called", "INFO")
+
         tags = generate_rfid_tags()
+        self.log(f"├─ Loaded {len(tags)} tags from template", "INFO")
+
         caminho = os.path.join(RFID_DIR, ARQUIVO_TAGS)
+        self.log(f"├─ Target path: {caminho}", "INFO")
 
         try:
+            # Verifica se diretório existe
+            if not os.path.exists(RFID_DIR):
+                self.log(f"├─ Creating directory: {RFID_DIR}", "WARNING")
+                os.makedirs(RFID_DIR, exist_ok=True)
+
+            # Cria arquivo
+            self.log(f"├─ Writing file...", "INFO")
             with open(caminho, "w", encoding="utf-8") as f:
                 for tag in tags:
                     f.write(tag + "\n")
-            self.log(f"├─ Created {ARQUIVO_TAGS}", "SUCCESS")
-            self.log(f"├─ Location: {caminho}", "INFO")
-            self.log(f"├─ Tags written: {len(tags)}", "SUCCESS")
+
+            self.log(f"├─ File written successfully!", "SUCCESS")
 
             # Verifica se arquivo existe
             if os.path.exists(caminho):
                 size = os.path.getsize(caminho)
-                self.log(f"├─ File size: {size} bytes", "INFO")
+                self.log(f"├─ File verified: {size} bytes", "SUCCESS")
+            else:
+                self.log(f"├─ WARNING: File not found after creation!", "ERROR")
 
             return True
         except Exception as e:
             self.log(f"ERROR creating {ARQUIVO_TAGS}: {e}", "ERROR")
+            import traceback
+            self.log(f"Traceback: {traceback.format_exc()}", "ERROR")
             return False
 
     def start_middleware(self):
