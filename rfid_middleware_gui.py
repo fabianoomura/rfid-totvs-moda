@@ -162,10 +162,17 @@ class RFIDMiddlewareGUI:
 
         self.btn_clear = tk.Label(br, text="[LIMPAR]",
                                  font=(F, 9), bg=BG2, fg=CYAN, cursor="hand2")
-        self.btn_clear.pack(side="left")
+        self.btn_clear.pack(side="left", padx=(0, 8))
         self.btn_clear.bind("<Button-1>", lambda e: self.clear_logs())
         self.btn_clear.bind("<Enter>", lambda e: self.btn_clear.config(fg=WHITE))
         self.btn_clear.bind("<Leave>", lambda e: self.btn_clear.config(fg=CYAN))
+
+        self.btn_test = tk.Label(br, text="[TESTAR]",
+                                font=(F, 9), bg=BG2, fg=YEL, cursor="hand2")
+        self.btn_test.pack(side="left")
+        self.btn_test.bind("<Button-1>", lambda e: self.test_flow())
+        self.btn_test.bind("<Enter>", lambda e: self.btn_test.config(fg=WHITE))
+        self.btn_test.bind("<Leave>", lambda e: self.btn_test.config(fg=YEL))
 
         self._div(m)
 
@@ -321,6 +328,38 @@ class RFIDMiddlewareGUI:
             self.observer.join()
 
         self.log("Middleware stopped", "WARNING")
+
+    def test_flow(self):
+        """Testa o fluxo completo simulando criação de arquivos do TOTVS."""
+        if not self.running:
+            self.log("ERROR: Start middleware first!", "ERROR")
+            return
+
+        def run_test():
+            # Simula portal abrindo
+            self.log("TEST: Simulating portal opening...", "WARNING")
+            time.sleep(1)
+
+            arquivo_iniciar = os.path.join(RFID_DIR, ARQUIVO_INICIAR)
+            with open(arquivo_iniciar, "w") as f:
+                f.write("")
+
+            self.log("TEST: RFIDIniciar.txt created", "INFO")
+
+            # Aguarda 3 segundos
+            time.sleep(3)
+
+            # Simula portal fechando
+            self.log("TEST: Simulating portal closing...", "WARNING")
+            arquivo_parar = os.path.join(RFID_DIR, ARQUIVO_PARAR)
+            with open(arquivo_parar, "w") as f:
+                f.write("")
+
+            self.log("TEST: RFIDParar.txt created", "INFO")
+            self.log("TEST: Complete!", "SUCCESS")
+
+        thread = threading.Thread(target=run_test, daemon=True)
+        thread.start()
 
 
 class RFIDEventHandlerGUI(FileSystemEventHandler):
