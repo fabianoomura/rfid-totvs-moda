@@ -433,11 +433,6 @@ class RFIDEventHandlerGUI(FileSystemEventHandler):
             self.gui.lbl_portal.config(fg=GREEN)
             self.gui.portal_aberto = True
 
-            # Small delay to ensure file is fully created
-            time.sleep(0.1)
-            self.gui.log("Creating tag file...", "INFO")
-            self.gui.criar_lista_tags()
-
         elif nome == ARQUIVO_PARAR:
             self.gui.log("=" * 50, "WARNING")
             self.gui.log(">>> PORTAL CLOSED <<<", "WARNING")
@@ -448,7 +443,11 @@ class RFIDEventHandlerGUI(FileSystemEventHandler):
             self.gui.dot_portal.config(fg=RED)
             self.gui.lbl_portal.config(fg=RED)
             self.gui.portal_aberto = False
-            self.gui.log(f"├─ {ARQUIVO_TAGS} kept in directory", "INFO")
+
+            # AGORA SIM cria o arquivo de tags (depois do portal fechar)
+            time.sleep(0.1)
+            self.gui.log("Creating tag file after portal closed...", "INFO")
+            self.gui.criar_lista_tags()
 
         elif nome == ARQUIVO_TAGS:
             # ListaTagtxt.txt foi criado (pelo nosso próprio código)
