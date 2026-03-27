@@ -1,6 +1,6 @@
 """
 rfid_middleware_gui.py — MOOUI
-Interface gráfica DARK para o simulador de middleware RFID.
+Interface gráfica minimalista para o simulador de middleware RFID.
 """
 
 import tkinter as tk
@@ -23,19 +23,18 @@ ARQUIVO_TAGS = "ListaTagtxt.txt"
 # Códigos de barras RFID
 BARCODES = [f"00392800010000#{i:05d}" for i in range(1, 11)]
 
-# Tema Dark Industrial
-COLORS = {
-    'bg': '#1a1a1a',           # Preto escuro
-    'fg': '#00ff00',           # Verde terminal
-    'panel': '#2b2b2b',        # Cinza escuro
-    'button_bg': '#3a3a3a',    # Cinza médio
-    'button_active': '#4a4a4a',# Cinza claro
-    'status_on': '#00ff00',    # Verde neon
-    'status_off': '#ff0000',   # Vermelho
-    'warning': '#ffaa00',      # Laranja
-    'info': '#00aaff',         # Azul
-    'border': '#00ff00',       # Verde neon
-}
+# Tema (baseado no rfid_terminal.py)
+BG    = "#0d0d0d"
+BG2   = "#111111"
+BRD   = "#2a2a2a"
+CYAN  = "#00e5ff"
+GREEN = "#00ff88"
+RED   = "#ff4444"
+YEL   = "#ffcc00"
+GRAY  = "#444444"
+LGRAY = "#888888"
+WHITE = "#e0e0e0"
+F     = "Courier New"
 
 
 def ean13_to_sgtin96(ean13_no_check: str, serial: int) -> str:
@@ -62,179 +61,140 @@ def generate_rfid_tags() -> list:
     return tags
 
 
-class IndustrialButton(tk.Canvas):
-    """Botão customizado estilo industrial."""
-
-    def __init__(self, parent, text, command, width=200, height=50, **kwargs):
-        super().__init__(parent, width=width, height=height, bg=COLORS['bg'],
-                        highlightthickness=2, highlightbackground=COLORS['border'])
-        self.command = command
-        self.text = text
-        self.enabled = True
-
-        # Desenha o botão
-        self.rect = self.create_rectangle(2, 2, width-2, height-2,
-                                          fill=COLORS['button_bg'],
-                                          outline=COLORS['border'], width=2)
-        self.text_id = self.create_text(width//2, height//2,
-                                        text=text, fill=COLORS['fg'],
-                                        font=('Consolas', 11, 'bold'))
-
-        # Eventos
-        self.bind("<Button-1>", self.on_click)
-        self.bind("<Enter>", self.on_enter)
-        self.bind("<Leave>", self.on_leave)
-
-    def on_click(self, event):
-        if self.enabled and self.command:
-            self.command()
-
-    def on_enter(self, event):
-        if self.enabled:
-            self.itemconfig(self.rect, fill=COLORS['button_active'])
-
-    def on_leave(self, event):
-        if self.enabled:
-            self.itemconfig(self.rect, fill=COLORS['button_bg'])
-
-    def set_enabled(self, enabled):
-        self.enabled = enabled
-        if enabled:
-            self.itemconfig(self.text_id, fill=COLORS['fg'])
-            self.itemconfig(self.rect, outline=COLORS['border'])
-        else:
-            self.itemconfig(self.text_id, fill='#555555')
-            self.itemconfig(self.rect, outline='#555555')
-
-
 class RFIDMiddlewareGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("RFID MIDDLEWARE SIMULATOR - MOOUI")
-        self.root.geometry("900x700")
-        self.root.configure(bg=COLORS['bg'])
+        self.root.title("RFID Middleware Simulator")
+        self.root.configure(bg=BG)
+        self.root.resizable(False, True)
 
         self.observer = None
         self.running = False
         self.portal_aberto = False
 
-        self.setup_ui()
+        self.var_middleware = tk.StringVar(value="Offline")
+        self.var_portal = tk.StringVar(value="Fechado")
+
+        self._build()
         Path(RFID_DIR).mkdir(parents=True, exist_ok=True)
 
-    def setup_ui(self):
-        """Configura a interface dark industrial."""
+        # Centraliza janela
+        self.root.update()
+        w = self.root.winfo_width()
+        h = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() - w) // 2
+        y = (self.root.winfo_screenheight() - h) // 2
+        self.root.geometry(f"{w}x{h}+{x}+{y}")
+
+    def _div(self, p):
+        """Cria divisor horizontal."""
+        tk.Frame(p, bg=BRD, height=1).pack(fill="x", pady=3)
+
+    def _lbl(self, p, t, fg=LGRAY, size=8):
+        """Label de seção."""
+        tk.Label(p, text=t, font=(F, size), bg=BG2, fg=fg).pack(anchor="w")
+
+    def _row(self, p, label, var, color=CYAN):
+        """Linha de informação com tree-like prefix."""
+        r = tk.Frame(p, bg=BG2)
+        r.pack(anchor="w", pady=1)
+        tk.Label(r, text="├─ ", font=(F, 9), bg=BG2, fg=GRAY).pack(side="left")
+        tk.Label(r, text=label, font=(F, 9), bg=BG2, fg=LGRAY).pack(side="left")
+        tk.Label(r, textvariable=var, font=(F, 9, "bold"), bg=BG2, fg=color).pack(side="left")
+
+    def _build(self):
+        """Constrói a interface."""
+        outer = tk.Frame(self.root, bg=BRD, padx=1, pady=1)
+        outer.pack(padx=10, pady=10, fill="both", expand=True)
+        m = tk.Frame(outer, bg=BG2, padx=18, pady=14)
+        m.pack(fill="both", expand=True)
 
         # Header
-        header = tk.Frame(self.root, bg=COLORS['panel'], height=80)
-        header.pack(fill=tk.X, padx=0, pady=0)
+        tk.Label(m, text="RFID Middleware Simulator",
+                font=(F, 11, "bold"), bg=BG2, fg=WHITE).pack(pady=(0, 12))
+        self._div(m)
 
-        title = tk.Label(header, text="█ RFID MIDDLEWARE SIMULATOR █",
-                        bg=COLORS['panel'], fg=COLORS['status_on'],
-                        font=('Consolas', 18, 'bold'))
-        title.pack(pady=10)
+        # Status Middleware
+        r1 = tk.Frame(m, bg=BG2)
+        r1.pack(fill="x", pady=2)
+        tk.Label(r1, text="Middleware:", font=(F, 9), bg=BG2, fg=LGRAY,
+                width=12, anchor="w").pack(side="left")
+        self.dot_middleware = tk.Label(r1, text="● ", font=(F, 9), bg=BG2, fg=RED)
+        self.dot_middleware.pack(side="left")
+        self.lbl_middleware = tk.Label(r1, textvariable=self.var_middleware,
+                                      font=(F, 9), bg=BG2, fg=RED, anchor="w")
+        self.lbl_middleware.pack(side="left")
 
-        subtitle = tk.Label(header, text="MOOUI INDUSTRIAL SYSTEMS",
-                           bg=COLORS['panel'], fg=COLORS['fg'],
-                           font=('Consolas', 9))
-        subtitle.pack()
+        # Status Portal
+        r2 = tk.Frame(m, bg=BG2)
+        r2.pack(fill="x", pady=2)
+        tk.Label(r2, text="Portal:", font=(F, 9), bg=BG2, fg=LGRAY,
+                width=12, anchor="w").pack(side="left")
+        self.dot_portal = tk.Label(r2, text="● ", font=(F, 9), bg=BG2, fg=GRAY)
+        self.dot_portal.pack(side="left")
+        self.lbl_portal = tk.Label(r2, textvariable=self.var_portal,
+                                   font=(F, 9), bg=BG2, fg=GRAY, anchor="w")
+        self.lbl_portal.pack(side="left")
 
-        # Status Panel
-        status_frame = tk.Frame(self.root, bg=COLORS['bg'])
-        status_frame.pack(fill=tk.X, padx=20, pady=15)
+        tk.Frame(m, bg=BG2, height=8).pack()
+        self._div(m)
 
-        # Middleware Status
-        middleware_panel = tk.Frame(status_frame, bg=COLORS['panel'],
-                                   highlightthickness=2,
-                                   highlightbackground=COLORS['border'])
-        middleware_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        # Controles
+        br = tk.Frame(m, bg=BG2)
+        br.pack(fill="x", pady=8)
 
-        tk.Label(middleware_panel, text="MIDDLEWARE STATUS",
-                bg=COLORS['panel'], fg=COLORS['fg'],
-                font=('Consolas', 10, 'bold')).pack(pady=5)
+        self.btn_start = tk.Label(br, text="[INICIAR]",
+                                 font=(F, 9, "bold"), bg=BG2, fg=GREEN, cursor="hand2")
+        self.btn_start.pack(side="left", padx=(0, 8))
+        self.btn_start.bind("<Button-1>", lambda e: self.start_middleware())
+        self.btn_start.bind("<Enter>", lambda e: self.btn_start.config(fg=WHITE))
+        self.btn_start.bind("<Leave>", lambda e: self.btn_start.config(
+            fg=GREEN if not self.running else GRAY))
 
-        self.middleware_status = tk.Label(middleware_panel, text="● OFFLINE",
-                                         bg=COLORS['panel'],
-                                         fg=COLORS['status_off'],
-                                         font=('Consolas', 16, 'bold'))
-        self.middleware_status.pack(pady=10)
+        self.btn_stop = tk.Label(br, text="[PARAR]",
+                                font=(F, 9, "bold"), bg=BG2, fg=GRAY, cursor="hand2")
+        self.btn_stop.pack(side="left", padx=(0, 8))
+        self.btn_stop.bind("<Button-1>", lambda e: self.stop_middleware())
+        self.btn_stop.bind("<Enter>", lambda e: self.btn_stop.config(
+            fg=WHITE if self.running else GRAY))
+        self.btn_stop.bind("<Leave>", lambda e: self.btn_stop.config(
+            fg=RED if self.running else GRAY))
 
-        # Portal Status
-        portal_panel = tk.Frame(status_frame, bg=COLORS['panel'],
-                               highlightthickness=2,
-                               highlightbackground=COLORS['border'])
-        portal_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        self.btn_clear = tk.Label(br, text="[LIMPAR]",
+                                 font=(F, 9), bg=BG2, fg=CYAN, cursor="hand2")
+        self.btn_clear.pack(side="left")
+        self.btn_clear.bind("<Button-1>", lambda e: self.clear_logs())
+        self.btn_clear.bind("<Enter>", lambda e: self.btn_clear.config(fg=WHITE))
+        self.btn_clear.bind("<Leave>", lambda e: self.btn_clear.config(fg=CYAN))
 
-        tk.Label(portal_panel, text="PORTAL TOTVS",
-                bg=COLORS['panel'], fg=COLORS['fg'],
-                font=('Consolas', 10, 'bold')).pack(pady=5)
+        self._div(m)
 
-        self.portal_status = tk.Label(portal_panel, text="● FECHADO",
-                                      bg=COLORS['panel'],
-                                      fg='#666666',
-                                      font=('Consolas', 16, 'bold'))
-        self.portal_status.pack(pady=10)
-
-        # Controls
-        controls_frame = tk.Frame(self.root, bg=COLORS['bg'])
-        controls_frame.pack(fill=tk.X, padx=20, pady=10)
-
-        self.btn_start = IndustrialButton(controls_frame, "START MIDDLEWARE",
-                                         self.start_middleware, width=200, height=50)
-        self.btn_start.pack(side=tk.LEFT, padx=10)
-
-        self.btn_stop = IndustrialButton(controls_frame, "STOP MIDDLEWARE",
-                                        self.stop_middleware, width=200, height=50)
-        self.btn_stop.pack(side=tk.LEFT, padx=10)
-        self.btn_stop.set_enabled(False)
-
-        self.btn_clear = IndustrialButton(controls_frame, "CLEAR LOGS",
-                                         self.clear_logs, width=150, height=50)
-        self.btn_clear.pack(side=tk.LEFT, padx=10)
-
-        # Tags Panel
-        tags_frame = tk.Frame(self.root, bg=COLORS['panel'],
-                             highlightthickness=2,
-                             highlightbackground=COLORS['border'])
-        tags_frame.pack(fill=tk.BOTH, expand=False, padx=20, pady=10)
-
-        tk.Label(tags_frame, text="TAGS RFID GERADAS (10x SGTIN-96)",
-                bg=COLORS['panel'], fg=COLORS['fg'],
-                font=('Consolas', 10, 'bold')).pack(pady=5, anchor=tk.W, padx=10)
-
+        # Tags RFID
+        self._lbl(m, "Tags RFID (10x SGTIN-96):")
         self.tags_text = scrolledtext.ScrolledText(
-            tags_frame, height=6, wrap=tk.WORD,
-            bg='#0a0a0a', fg=COLORS['status_on'],
-            font=('Consolas', 9), insertbackground=COLORS['fg'],
-            highlightthickness=0, borderwidth=0
+            m, height=7, wrap=tk.NONE, font=(F, 8),
+            bg="#0a0a0a", fg=GREEN, insertbackground=CYAN,
+            relief="flat", bd=0, padx=8, pady=6
         )
-        self.tags_text.pack(fill=tk.BOTH, expand=False, padx=10, pady=5)
+        self.tags_text.pack(fill="x", pady=(4, 8))
         self.show_tags()
 
-        # Log Panel
-        log_frame = tk.Frame(self.root, bg=COLORS['panel'],
-                            highlightthickness=2,
-                            highlightbackground=COLORS['border'])
-        log_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        self._div(m)
 
-        tk.Label(log_frame, text="SYSTEM LOGS",
-                bg=COLORS['panel'], fg=COLORS['fg'],
-                font=('Consolas', 10, 'bold')).pack(pady=5, anchor=tk.W, padx=10)
-
+        # Logs
+        self._lbl(m, "Logs do sistema:")
         self.log_text = scrolledtext.ScrolledText(
-            log_frame, wrap=tk.WORD,
-            bg='#0a0a0a', fg=COLORS['fg'],
-            font=('Consolas', 9), insertbackground=COLORS['fg'],
-            highlightthickness=0, borderwidth=0
+            m, height=12, wrap=tk.WORD, font=(F, 8),
+            bg="#0a0a0a", fg=LGRAY, insertbackground=CYAN,
+            relief="flat", bd=0, padx=8, pady=6
         )
-        self.log_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        self.log_text.pack(fill="both", expand=True, pady=(4, 0))
 
         # Footer
-        footer = tk.Frame(self.root, bg=COLORS['panel'], height=30)
-        footer.pack(fill=tk.X, side=tk.BOTTOM)
-
-        tk.Label(footer, text=f"Monitoring: {RFID_DIR}",
-                bg=COLORS['panel'], fg=COLORS['fg'],
-                font=('Consolas', 8)).pack(side=tk.LEFT, padx=10)
+        tk.Frame(m, bg=BG2, height=4).pack()
+        self._div(m)
+        tk.Label(m, text=f"Monitoring: {RFID_DIR}",
+                font=(F, 7), bg=BG2, fg=GRAY).pack(anchor="w")
 
     def show_tags(self):
         """Mostra as tags RFID."""
@@ -243,28 +203,25 @@ class RFIDMiddlewareGUI:
         self.tags_text.delete(1.0, tk.END)
         for i, tag in enumerate(tags, 1):
             barcode = BARCODES[i-1]
-            self.tags_text.insert(tk.END, f"{i:02d} | {tag} | {barcode}\n")
+            self.tags_text.insert(tk.END, f"{i:02d} │ {tag} │ {barcode}\n")
         self.tags_text.config(state=tk.DISABLED)
 
     def log(self, message, level="INFO"):
-        """Adiciona mensagem ao log com cores."""
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-
+        """Adiciona mensagem ao log."""
+        timestamp = datetime.now().strftime("%H:%M:%S")
         colors = {
-            "INFO": COLORS['info'],
-            "SUCCESS": COLORS['status_on'],
-            "WARNING": COLORS['warning'],
-            "ERROR": COLORS['status_off']
+            "INFO": CYAN,
+            "SUCCESS": GREEN,
+            "WARNING": YEL,
+            "ERROR": RED
         }
-        color = colors.get(level, COLORS['fg'])
+        color = colors.get(level, LGRAY)
 
         self.log_text.config(state=tk.NORMAL)
         self.log_text.insert(tk.END, f"[{timestamp}] ", "timestamp")
         self.log_text.insert(tk.END, f"{message}\n", level.lower())
-
-        self.log_text.tag_config("timestamp", foreground='#666666')
+        self.log_text.tag_config("timestamp", foreground=GRAY)
         self.log_text.tag_config(level.lower(), foreground=color)
-
         self.log_text.see(tk.END)
         self.log_text.config(state=tk.DISABLED)
 
@@ -282,9 +239,9 @@ class RFIDMiddlewareGUI:
         for arquivo in arquivos:
             try:
                 os.remove(arquivo)
-                self.log(f"  Removed: {os.path.basename(arquivo)}", "SUCCESS")
+                self.log(f"├─ Removed: {os.path.basename(arquivo)}", "SUCCESS")
             except Exception as e:
-                self.log(f"  Error removing {os.path.basename(arquivo)}: {e}", "ERROR")
+                self.log(f"├─ Error: {os.path.basename(arquivo)} - {e}", "ERROR")
 
     def criar_lista_tags(self):
         """Cria ListaTagtxt.txt com as tags."""
@@ -307,19 +264,19 @@ class RFIDMiddlewareGUI:
             return
 
         self.running = True
-        self.middleware_status.config(text="● ONLINE", fg=COLORS['status_on'])
-        self.btn_start.set_enabled(False)
-        self.btn_stop.set_enabled(True)
+        self.var_middleware.set("Online")
+        self.dot_middleware.config(fg=GREEN)
+        self.lbl_middleware.config(fg=GREEN)
+        self.btn_start.config(fg=GRAY)
+        self.btn_stop.config(fg=RED)
 
-        self.log("="*60, "INFO")
-        self.log("MIDDLEWARE STARTED", "SUCCESS")
+        self.log("=" * 50, "INFO")
+        self.log("Middleware started", "SUCCESS")
         self.log(f"Monitoring: {RFID_DIR}", "INFO")
-        self.log("="*60, "INFO")
+        self.log("=" * 50, "INFO")
 
-        # Limpa arquivos
         self.limpar_arquivos_txt()
 
-        # Inicia watchdog
         def run_observer():
             self.observer = Observer()
             handler = RFIDEventHandlerGUI(self)
@@ -341,17 +298,21 @@ class RFIDMiddlewareGUI:
             return
 
         self.running = False
-        self.middleware_status.config(text="● OFFLINE", fg=COLORS['status_off'])
-        self.portal_status.config(text="● FECHADO", fg='#666666')
+        self.var_middleware.set("Offline")
+        self.dot_middleware.config(fg=RED)
+        self.lbl_middleware.config(fg=RED)
+        self.var_portal.set("Fechado")
+        self.dot_portal.config(fg=GRAY)
+        self.lbl_portal.config(fg=GRAY)
         self.portal_aberto = False
-        self.btn_start.set_enabled(True)
-        self.btn_stop.set_enabled(False)
+        self.btn_start.config(fg=GREEN)
+        self.btn_stop.config(fg=GRAY)
 
         if self.observer:
             self.observer.stop()
             self.observer.join()
 
-        self.log("MIDDLEWARE STOPPED", "WARNING")
+        self.log("Middleware stopped", "WARNING")
 
 
 class RFIDEventHandlerGUI(FileSystemEventHandler):
@@ -367,19 +328,22 @@ class RFIDEventHandlerGUI(FileSystemEventHandler):
         nome = os.path.basename(event.src_path)
 
         if nome == ARQUIVO_INICIAR:
-            self.gui.log(">>> PORTAL OPENED (RFIDIniciar.txt detected)", "SUCCESS")
-            self.gui.portal_status.config(text="● ABERTO", fg=COLORS['status_on'])
+            self.gui.log(">>> Portal opened (RFIDIniciar.txt detected)", "SUCCESS")
+            self.gui.var_portal.set("Aberto")
+            self.gui.dot_portal.config(fg=GREEN)
+            self.gui.lbl_portal.config(fg=GREEN)
             self.gui.portal_aberto = True
 
-            # Cria arquivo de tags
-            time.sleep(0.1)  # Pequeno delay para garantir que o arquivo foi criado
+            time.sleep(0.1)
             self.gui.criar_lista_tags()
 
         elif nome == ARQUIVO_PARAR:
-            self.gui.log(">>> PORTAL CLOSED (RFIDParar.txt detected)", "WARNING")
-            self.gui.portal_status.config(text="● FECHADO", fg=COLORS['status_off'])
+            self.gui.log(">>> Portal closed (RFIDParar.txt detected)", "WARNING")
+            self.gui.var_portal.set("Fechado")
+            self.gui.dot_portal.config(fg=RED)
+            self.gui.lbl_portal.config(fg=RED)
             self.gui.portal_aberto = False
-            self.gui.log(f"  {ARQUIVO_TAGS} kept in directory", "INFO")
+            self.gui.log(f"├─ {ARQUIVO_TAGS} kept in directory", "INFO")
 
 
 def main():
